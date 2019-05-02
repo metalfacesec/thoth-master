@@ -10,12 +10,23 @@ io.on('connection', client => {
     });
 
     client.on('live_target_found', data => {
-        DatabaseUtils.writeToDB(data);
-        if (!data.is_random) {
-            return;
-        }
-        targetManager.addTargets(data.ip);
+        handleFoundTarget(data);
     });
 });
+
+async function handleFoundTarget(data) {
+    let previousRecord = await DatabaseUtils.getDeviceByIp(data.ip);
+    if (previousRecord != null) {
+        data._id = previousRecord._id;
+        DatabaseUtils.updateDevice(data);
+    } else {
+        DatabaseUtils.insertDevice(data);
+    }
+    
+    if (!data.is_random) {
+        return;
+    }
+    targetManager.addTargets(data.ip);
+}
 
 io.listen(3000);
